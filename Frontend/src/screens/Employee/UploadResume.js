@@ -5,11 +5,13 @@ import {
   Text,
   TouchableOpacity,
   Alert,
+  Platform,
 } from 'react-native';
 
 import Icon from 'react-native-vector-icons/Ionicons';
 import FeatherIcon from 'react-native-vector-icons/Feather';
 import { pick, types, isErrorWithCode, errorCodes } from '@react-native-documents/picker';
+import ReactNativeBlobUtil from 'react-native-blob-util';
 import { uploadResume } from '../../services/resumeService';
 import styles from '../../styles/Employee/UploadResume';
 import { useEmployee } from '../../context/EmployeeContext';
@@ -57,19 +59,30 @@ const UploadResume = ({navigation, route}) => {
 
     setLoading(true);
     try {
+      let fileUri = selectedFile.uri;
+      
+      // Axios FormData on Android often fails with "content://" URIs
+      // We copy it to the cache directory and use the "file://" URI instead
+      if (Platform.OS === 'android' && fileUri.startsWith('content://')) {
+        const destPath = `${ReactNativeBlobUtil.fs.dirs.CacheDir}/${selectedFile.name}`;
+        await ReactNativeBlobUtil.fs.cp(fileUri, destPath);
+        fileUri = `file://${destPath}`;
+      }
+
       const formData = new FormData();
       formData.append('resume', {
-        uri: selectedFile.uri,
+        uri: fileUri,
         name: selectedFile.name,
         type: selectedFile.type || 'application/pdf',
       });
+
       
       const response = await uploadResume(formData);
       const returnedResume = response?.data?.data || response?.data;
-      const uploadedFileUrl = returnedResume?.fileUrl || returnedResume?.resumeUrl;
+      const uploadedFileUrl = returnedResume?.downloadUrl || returnedResume?.fileUrl || returnedResume?.resumeUrl;
 
       if (!uploadedFileUrl) {
-        throw new Error('Backend did not return a file URL. Make sure the latest backend code is deployed and finished building on Render.');
+        throw new Error('Backend did not return a file URL. Please check the network tab or backend logs.');
       }
 
       const finalData = { ...baseData, resumeFile: uploadedFileUrl };

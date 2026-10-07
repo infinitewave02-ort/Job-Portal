@@ -4,7 +4,22 @@ import { uploadFileToStorage } from '../utils/Storage.js';
 export const getUserProfile = async (uid) => {
     const doc = await db.collection('users').doc(uid).get();
     if (!doc.exists) throw new Error('User not found');
-    return { uid, ...doc.data() };
+    
+    const userData = doc.data();
+    
+    // Try to fetch employee data
+    const empDoc = await db.collection('employees').doc(uid).get();
+    if (empDoc.exists) {
+        return { uid, ...userData, ...empDoc.data() };
+    }
+    
+    // Try to fetch employer data
+    const emplDoc = await db.collection('employers').doc(uid).get();
+    if (emplDoc.exists) {
+        return { uid, ...userData, ...emplDoc.data() };
+    }
+    
+    return { uid, ...userData };
 };
 
 export const updateUserProfile = async (uid, data) => {
@@ -16,7 +31,7 @@ export const updateUserProfile = async (uid, data) => {
     const employeeFields = [
         'fullName', 'jobTitle', 'experience',
         'currentLocation', 'preferredLocation', 'qualification',
-        'expectedSalary', 'noticePeriod', 'gender', 'skills'
+        'expectedSalary', 'noticePeriod', 'gender', 'skills', 'phone'
     ];
 
     const now = new Date().toISOString();

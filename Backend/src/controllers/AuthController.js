@@ -29,7 +29,7 @@ export const registerEmployee = async (req, res, next) => {
             fullName, email, password, 
             jobTitle, experience, qualification, 
             currentLocation, preferredLocation, 
-            skills, expectedSalary, noticePeriod, gender 
+            skills, expectedSalary, noticePeriod, gender, phone
         } = req.body;
         
         if (!fullName || !email || !password) {
@@ -62,7 +62,8 @@ export const registerEmployee = async (req, res, next) => {
             skills,
             expectedSalary,
             noticePeriod,
-            gender
+            gender,
+            phone
         };
         
         // Remove undefined properties to avoid Firestore errors

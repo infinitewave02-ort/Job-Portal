@@ -102,5 +102,20 @@ export const syncUserWithFirestore = async (uid, userData) => {
 export const getUserProfile = async (uid) => {
     const doc = await db.collection('users').doc(uid).get();
     if (!doc.exists) throw new Error('User not found');
-    return doc.data();
+    
+    const userData = doc.data();
+    
+    // Try to fetch employee data
+    const empDoc = await db.collection('employees').doc(uid).get();
+    if (empDoc.exists) {
+        return { uid, ...userData, ...empDoc.data() };
+    }
+    
+    // Try to fetch employer data
+    const emplDoc = await db.collection('employers').doc(uid).get();
+    if (emplDoc.exists) {
+        return { uid, ...userData, ...emplDoc.data() };
+    }
+    
+    return { uid, ...userData };
 };

@@ -18,6 +18,7 @@ import styles from '../../styles/Employee/BasicDetails';
 const BasicDetails = ({navigation, route}) => {
   const { fullName, email, password } = route.params || {};
   const [jobTitle, setJobTitle] = useState('');
+  const [phone, setPhone] = useState('');
   const [experience, setExperience] = useState('');
   const [qualification, setQualification] = useState('');
   const [currentLocation, setCurrentLocation] = useState('');
@@ -53,6 +54,7 @@ const BasicDetails = ({navigation, route}) => {
   const handleSaveAndContinue = () => {
     let newErrors = {};
     if (!jobTitle.trim()) newErrors.jobTitle = true;
+    if (!phone.trim()) newErrors.phone = true;
     if (!experience.trim()) newErrors.experience = true;
     if (!qualification.trim()) newErrors.qualification = true;
     if (!currentLocation.trim()) newErrors.currentLocation = true;
@@ -70,6 +72,7 @@ const BasicDetails = ({navigation, route}) => {
       email,
       password,
       jobTitle,
+      phone,
       experience,
       qualification,
       currentLocation,
@@ -108,6 +111,17 @@ const BasicDetails = ({navigation, route}) => {
                 value={jobTitle}
                 onChangeText={(text) => { setJobTitle(text); setErrors(prev => ({...prev, jobTitle: null})); }}
                 autoCapitalize="words"
+              />
+            </View>
+
+            {/* Contact No */}
+            <Text style={styles.inputLabel}>Contact No</Text>
+            <View style={[styles.inputContainer, errors.phone && styles.errorInput]}>
+              <TextInput
+                style={styles.input}
+                value={phone}
+                onChangeText={(text) => { setPhone(text); setErrors(prev => ({...prev, phone: null})); }}
+                keyboardType="phone-pad"
               />
             </View>
 

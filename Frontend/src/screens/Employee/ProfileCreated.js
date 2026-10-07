@@ -13,24 +13,24 @@ const ProfileCreated = ({navigation, route}) => {
   const previousData = route?.params || {};
 
   const handleGoToDashboard = () => {
-    navigation.navigate('Profile', { ...previousData });
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Profile', params: { ...previousData } }],
+    });
   };
 
-    const handleGoToHome = () => {
-    navigation.navigate('Root', { ...previousData });
+  const handleGoToHome = () => {
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Root', params: { ...previousData } }],
+    });
   };
-
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Optional back button if needed, although user finished flow it's in the design */}
+        {/* Header without back button */}
         <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={() => navigation.goBack()}>
-            <Icon name="arrow-back" size={24} color="#1A1A1A" />
-          </TouchableOpacity>
         </View>
 
         {/* Success Icon */}

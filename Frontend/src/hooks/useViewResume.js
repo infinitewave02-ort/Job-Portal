@@ -15,24 +15,17 @@
  *  openResume — call this with a resumeFile object or URL string
  */
 
-import { useState, useCallback } from 'react';
-import { Alert, Platform } from 'react-native';
-import RNBlobUtil from 'react-native-blob-util';
+import React, { useState, useCallback } from 'react';
+import { Alert, Platform, Linking, Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 
-const APP_ID = 'com.myapp'; // must match applicationId in build.gradle
-
-/**
- * @param {object|string|null} resumeFile
- *   object → { uri: string, name?: string, ... }  (from document picker)
- *   string → remote http/https URL
- *   null   → no resume uploaded
- */
 export default function useViewResume() {
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [currentUrl, setCurrentUrl] = useState(null);
 
   const openResume = useCallback(async (resumeFile) => {
-    // ── Guard: nothing uploaded ──────────────────────────────────
     if (!resumeFile) {
       Alert.alert(
         'No Resume Found',
@@ -42,101 +35,168 @@ export default function useViewResume() {
       return;
     }
 
-    if (Platform.OS !== 'android') {
-      // iOS: react-native-blob-util also supports openDocument on iOS
-      Alert.alert('Info', 'PDF viewing is optimised for Android in this app.');
-      return;
-    }
-
-    // ── Determine URI & file name ────────────────────────────────
     const isRemote =
       typeof resumeFile === 'string' &&
       (resumeFile.startsWith('http://') || resumeFile.startsWith('https://'));
 
-    const isLocalPicker =
-      typeof resumeFile === 'object' &&
-      resumeFile !== null &&
-      typeof resumeFile.uri === 'string';
-
     try {
       if (isRemote) {
-        // ─────────────────── REMOTE PDF ────────────────────────
-        const url = resumeFile;
-        const fileName = url.split('/').pop().split('?')[0] || 'resume.pdf';
-        const destPath = `${RNBlobUtil.fs.dirs.CacheDir}/${Date.now()}_${fileName}`;
-
-        setIsLoading(true);
-        setProgress(0);
-
-        await RNBlobUtil.config({
-          fileCache: true,
-          path: destPath,
-          addAndroidDownloads: {
-            // No notification, no MediaStore — pure cache download
-            useDownloadManager: false,
-          },
-        })
-          .fetch('GET', url)
-          .progress({ interval: 250 }, (received, total) => {
-            if (total > 0) setProgress(Math.round((received / total) * 100));
-          });
-
-        setIsLoading(false);
-        setProgress(0);
-
-        // Open from cache via FileProvider Intent
-        await _openFileIntent(destPath, 'application/pdf');
-
-      } else if (isLocalPicker) {
-        // ─────────────────── LOCAL (content:// URI) ────────────
-        // Picked by @react-native-documents/picker → already a content URI.
-        // Android can open content:// URIs directly with VIEW Intent.
-        const { uri } = resumeFile;
-
-        // Try content:// direct open first
-        if (uri.startsWith('content://')) {
-          await _openContentUri(uri);
-        } else if (uri.startsWith('file://')) {
-          // file:// URI — copy to cache to get a FileProvider content:// URI
-          const fileName = resumeFile.name || 'resume.pdf';
-          const destPath = `${RNBlobUtil.fs.dirs.CacheDir}/${Date.now()}_${fileName}`;
-          await RNBlobUtil.fs.cp(uri.replace('file://', ''), destPath);
-          await _openFileIntent(destPath, 'application/pdf');
-        } else {
-          throw new Error('Unknown URI scheme: ' + uri);
-        }
+        setCurrentUrl(resumeFile);
+        setModalVisible(true);
       } else {
-        Alert.alert('Invalid Resume', 'The resume file format is not recognised.');
+        Alert.alert('Info', 'Local resume viewing is not supported yet.');
       }
     } catch (err) {
-      setIsLoading(false);
-      setProgress(0);
       console.error('[useViewResume]', err);
-
-      if (err?.message?.includes('No Activity') || err?.message?.includes('ActivityNotFoundException')) {
-        Alert.alert(
-          'No PDF App Found',
-          'Please install a PDF reader app (e.g. Adobe Acrobat, Google Drive) to open this resume.',
-          [{ text: 'OK' }]
-        );
-      } else if (err?.message?.includes('Network') || err?.message?.includes('fetch')) {
-        Alert.alert(
-          'Download Failed',
-          'Could not download the resume. Please check your internet connection and try again.',
-          [{ text: 'OK' }]
-        );
-      } else {
-        Alert.alert(
-          'Cannot Open Resume',
-          'An error occurred while trying to open the resume. Please try again.',
-          [{ text: 'OK' }]
-        );
-      }
+      Alert.alert('Cannot Open Resume', 'An error occurred while trying to open the resume.');
     }
   }, []);
 
-  return { isLoading, progress, openResume };
+  const handleOpenBrowser = async () => {
+    setModalVisible(false);
+    if (currentUrl) await Linking.openURL(currentUrl);
+  };
+
+  const handleSystemApps = async () => {
+    if (!currentUrl) return;
+    
+    try {
+      const RNBlobUtil = require('react-native-blob-util').default;
+      const { dirs } = RNBlobUtil.fs;
+      const localPath = `${dirs.DocumentDir}/temp_resume.pdf`;
+      
+      setIsLoading(true);
+      setProgress(0);
+      setModalVisible(false); // hide modal while downloading
+      
+      await RNBlobUtil.config({
+        fileCache: true,
+        path: localPath
+      })
+      .fetch('GET', currentUrl)
+      .progress((received, total) => {
+        setProgress(Math.round((received / total) * 100));
+      });
+      
+      // Open with system PDF viewer explicitly
+      await RNBlobUtil.android.actionViewIntent(localPath, 'application/pdf');
+      
+    } catch (error) {
+      console.log('Open with PDF error:', error.message);
+      Alert.alert('Error', 'No PDF viewer app found on your device or an error occurred.', [
+        { text: 'Try Browser Instead', onPress: handleOpenBrowser },
+        { text: 'Cancel', style: 'cancel' }
+      ]);
+    } finally {
+      setIsLoading(false);
+      setProgress(0);
+    }
+  };
+
+  const ResumePopup = () => (
+    <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={() => setModalVisible(false)}>
+      <View style={styles.modalOverlay}>
+        <View style={styles.bottomSheet}>
+          <View style={styles.dragHandle} />
+          <Text style={styles.sheetTitle}>Open with</Text>
+          
+          <TouchableOpacity style={styles.appOption} onPress={handleOpenBrowser}>
+            <View style={[styles.appIcon, { backgroundColor: '#E1F5FE' }]}>
+              <Icon name="globe-outline" size={24} color="#0288D1" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.appName}>Browser / Web Viewer</Text>
+              <Text style={styles.appDesc}>View directly in Chrome or your default browser</Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.appOption} onPress={handleSystemApps}>
+            <View style={[styles.appIcon, { backgroundColor: '#F3E5F5' }]}>
+              <Icon name="apps-outline" size={24} color="#7B1FA2" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.appName}>System Default Apps</Text>
+              <Text style={styles.appDesc}>Choose from installed PDF readers & recommended apps</Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.cancelButton} onPress={() => setModalVisible(false)}>
+            <Text style={styles.cancelText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+
+  return { isLoading, progress, openResume, ResumePopup };
 }
+
+const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  bottomSheet: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    paddingBottom: 40,
+    elevation: 5,
+  },
+  dragHandle: {
+    width: 40,
+    height: 5,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 3,
+    alignSelf: 'center',
+    marginBottom: 15,
+  },
+  sheetTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginBottom: 20,
+  },
+  appOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F5',
+  },
+  appIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
+  },
+  appName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 2,
+  },
+  appDesc: {
+    fontSize: 13,
+    color: '#888',
+  },
+  cancelButton: {
+    marginTop: 20,
+    paddingVertical: 14,
+    borderRadius: 10,
+    backgroundColor: '#F5F5F5',
+    alignItems: 'center',
+  },
+  cancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  }
+});
 
 // ────────────────────────────────────────────────────────────────
 // Helpers

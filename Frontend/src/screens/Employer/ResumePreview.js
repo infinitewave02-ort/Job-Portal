@@ -18,7 +18,7 @@ const ResumePreview = ({ navigation, route }) => {
   const hasPdf = !!candidate.resumeFile;
   const fileName = candidate.resumeFile?.name || `${candidateName}_Resume.pdf`;
 
-  const { isLoading, progress, openResume } = useViewResume();
+  const { isLoading, progress, openResume, ResumePopup } = useViewResume();
 
   const handleOpenPdf = () => openResume(candidate.resumeFile || null);
 
@@ -194,6 +194,7 @@ const ResumePreview = ({ navigation, route }) => {
         </View>
       )}
 
+      <ResumePopup />
     </SafeAreaView>
   );
 };

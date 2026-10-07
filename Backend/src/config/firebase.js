@@ -57,7 +57,9 @@ if (!serviceAccount) {
 if (!serviceAccount) {
     if (process.env.K_SERVICE || process.env.FUNCTIONS_EMULATOR || process.env.FUNCTIONS_WORKER_ID) {
         console.log('Running in Firebase Functions environment, using default credentials');
-        initializeApp();
+        initializeApp({
+            storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${process.env.GCLOUD_PROJECT || 'job-portal-vijay'}.firebasestorage.app`
+        });
     } else {
         console.error('❌ No Firebase credentials found. Set FIREBASE_SERVICE_ACCOUNT or individual FIREBASE_* env vars.');
         process.exit(1);
@@ -66,7 +68,7 @@ if (!serviceAccount) {
     initializeApp({
         credential: cert(serviceAccount),
         storageBucket: process.env.FIREBASE_STORAGE_BUCKET ||
-            `${serviceAccount.project_id || serviceAccount.projectId}.appspot.com`
+            `${serviceAccount.project_id || serviceAccount.projectId}.firebasestorage.app`
     });
 }
 

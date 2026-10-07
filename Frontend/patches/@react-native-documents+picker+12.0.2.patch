@@ -1,4 +1,4 @@
-diff --git a/node_modules/@react-native-documents/picker/android/build.gradle b/node_modules/@react-native-documents/picker/android/build.gradle
+diff --git a/node_modules/@react-native-documents/picker/android/e b/node_modules/@react-native-documents/picker/android/build.gradle
 index a41bc72..d7589d9 100644
 --- a/node_modules/@react-native-documents/picker/android/build.gradle
 +++ b/node_modules/@react-native-documents/picker/android/build.gradle

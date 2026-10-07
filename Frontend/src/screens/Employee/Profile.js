@@ -36,7 +36,7 @@ const Profile = ({navigation, route}) => {
   const routeParams = route?.params || {};
   const fallbackData = routeParams.employeeData || routeParams;
 
-  const fullName           = employeeProfile?.fullName           || fallbackData.fullName           || 'User Name';
+  const fullName           = employeeProfile?.fullName           || employeeProfile?.name           || fallbackData.fullName           || fallbackData.name || 'User Name';
   const jobTitle           = employeeProfile?.jobTitle           || fallbackData.jobTitle           || 'Add Job Title';
   const email              = employeeProfile?.email              || fallbackData.email              || 'Not provided';
   const phone              = employeeProfile?.phone              || fallbackData.phone              || 'Not provided';
@@ -51,7 +51,7 @@ const Profile = ({navigation, route}) => {
   const resumeFile         = employeeProfile?.resumeFile         || fallbackData.resumeFile         || null;
   const profileImage       = employeeProfile?.profileImage       || fallbackData.profileImage       || null;
 
-  const { isLoading: resumeLoading, progress: resumeProgress, openResume } = useViewResume();
+  const { isLoading: resumeLoading, progress: resumeProgress, openResume, ResumePopup } = useViewResume();
 
   const [isOpenToWork, setIsOpenToWork] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -103,12 +103,7 @@ const Profile = ({navigation, route}) => {
 
         {/* Header */}
         <View style={dashboardStyles.header}>
-          <TouchableOpacity
-            style={dashboardStyles.headerButton}
-            onPress={() => navigation.goBack()}>
-            <Icon name="arrow-back" size={24} color="#1A1A1A" />
-          </TouchableOpacity>
-          <Text style={dashboardStyles.title}>My Profile</Text>
+          <Text style={[dashboardStyles.title, { marginLeft: 16 }]}>My Profile</Text>
         </View>
 
         <ScrollView contentContainerStyle={localStyles.scrollContainer} showsVerticalScrollIndicator={false}>
@@ -157,15 +152,6 @@ const Profile = ({navigation, route}) => {
             <Text style={localStyles.sectionTitle}>Quick Actions</Text>
           </View>
           <View style={localStyles.menuCard}>
-            <TouchableOpacity style={localStyles.menuItem} onPress={() => navigation.navigate('ProfileViews', routeParams)}>
-              <View style={localStyles.menuIconWrap}>
-                <FeatherIcon name="eye" size={18} color="#1E3A8A" />
-              </View>
-              <Text style={localStyles.menuText}>Profile Views</Text>
-              <Text style={localStyles.menuBadge}>0</Text>
-              <FeatherIcon name="chevron-right" size={16} color="#CCC" />
-            </TouchableOpacity>
-            <View style={localStyles.menuDivider} />
 
             <TouchableOpacity style={localStyles.menuItem} onPress={() => navigation.navigate('Messages', routeParams)}>
               <View style={localStyles.menuIconWrap}>
@@ -358,6 +344,7 @@ const Profile = ({navigation, route}) => {
           </TouchableOpacity>
         </View>
 
+        <ResumePopup />
       </View>
     </SafeAreaView>
   );

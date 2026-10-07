@@ -23,13 +23,9 @@ const Activity = ({navigation, route}) => {
         
         {/* Header */}
         <View style={dashboardStyles.header}>
-          <TouchableOpacity
-            style={dashboardStyles.headerButton}
-            onPress={() => navigation.goBack()}>
-            <Icon name="arrow-back" size={24} color="#1A1A1A" />
-          </TouchableOpacity>
-          <Text style={dashboardStyles.title}>Activity</Text>
+          <Text style={[dashboardStyles.title, { marginLeft: 16 }]}>Activity</Text>
         </View>
+        <View style={{ height: 1, backgroundColor: '#E5E7EB', width: '100%' }} />
 
         <ScrollView contentContainerStyle={localStyles.scrollContainer} showsVerticalScrollIndicator={false}>
           {activities.length > 0 ? activities.map((item) => (

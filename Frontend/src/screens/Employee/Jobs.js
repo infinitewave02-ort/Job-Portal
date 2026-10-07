@@ -96,12 +96,7 @@ const Jobs = ({navigation, route}) => {
         
         {/* Header */}
         <View style={dashboardStyles.header}>
-          <TouchableOpacity
-            style={dashboardStyles.headerButton}
-            onPress={() => navigation.goBack()}>
-            <Icon name="arrow-back" size={24} color="#1A1A1A" />
-          </TouchableOpacity>
-          <Text style={dashboardStyles.title}>Jobs</Text>
+          <Text style={[dashboardStyles.title, { marginLeft: 16 }]}>Jobs</Text>
         </View>
 
         {/* Search Bar */}
